@@ -1,6 +1,3 @@
-// Set the start URL
-var startUrl = 'http://www.lotsofcode.com/';
-
 // URL variables
 var visitedUrls = [], pendingUrls = [];
 
@@ -9,8 +6,15 @@ var casper = require('casper').create({ /*verbose: true, logLevel: 'debug'*/ });
 var utils = require('utils')
 var helpers = require('./helpers')
 
+// Set the start URL
+var startUrl = casper.cli.args[0];
+
 // Spider from the given URL
 function spider(url) {
+
+	if (url.indexOf(startUrl) === -1) {
+		return false;
+	}
 
 	// Add the URL to the visited stack
 	visitedUrls.push(url);
@@ -22,7 +26,8 @@ function spider(url) {
 		var status = this.status().currentHTTPStatus;
 		switch(status) {
 			case 200: var statusStyle = { fg: 'green', bold: true }; break;
-			case 404: var statusStyle = { fg: 'red', bold: true }; break;
+			case 404: case 503: var statusStyle = { fg: 'red', bold: true }; break;
+			case 301: var statusStyle = { fg: 'blue', bold: true }; break;
 			 default: var statusStyle = { fg: 'magenta', bold: true }; break;
 		}
 
@@ -59,10 +64,15 @@ function spider(url) {
 
 }
 
-// Start spidering
-casper.start(startUrl, function() {
-	spider(startUrl);
-});
+if (startUrl) {
+	// Start spidering
+	casper.start(startUrl, function() {
+		spider(startUrl);
+	});
 
-// Start the run
-casper.run();
+	// Start the run
+	casper.run();
+} else {
+	console.log("Usage: casperjs spider.js http://starturl.com");
+	casper.exit();
+}
